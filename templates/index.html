@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>物理教学备课工具</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --bg2:       #161b22;
+      --bg3:       #21262d;
+      --border:    #30363d;
+      --text:      #c9d1d9;
+      --text-dim:  #8b949e;
+      --accent:    #58a6ff;
+      --accent2:   #3fb950;
+      --warn:      #f78166;
+      --warn2:     #e3b341;
+      --radius:    8px;
+      --shadow:    0 4px 24px rgba(0,0,0,.45);
+    }
+
+    html { font-size: 15px; }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    header .logo { font-size: 1.5rem; }
+    header h1 { font-size: 1.15rem; font-weight: 600; letter-spacing: .03em; color: #e6edf3; }
+    header span.sub { font-size: .82rem; color: var(--text-dim); margin-left: 4px; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 960px;
+      margin: 32px auto;
+      padding: 0 20px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      box-shadow: var(--shadow);
+    }
+    .card h2 {
+      font-size: .92rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--text-dim); margin-bottom: 18px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .card h2 .icon { font-size: 1rem; }
+
+    /* ── Inputs ── */
+    label { display: block; font-size: .88rem; color: var(--text-dim); margin-bottom: 6px; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 9px 13px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: .93rem;
+      outline: none; transition: border-color .2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus { border-color: var(--accent); }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 28px 20px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s; position: relative;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent); background: rgba(88,166,255,.06);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-zone .dz-icon { font-size: 2rem; margin-bottom: 8px; }
+    .drop-zone .dz-title { font-size: .95rem; color: var(--text); }
+    .drop-zone .dz-sub { font-size: .8rem; color: var(--text-dim); margin-top: 4px; }
+
+    .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .file-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg3); border-radius: 6px; padding: 7px 12px; font-size: .85rem;
+    }
+    .file-item .fi-icon { color: var(--warn2); }
+    .file-item .fi-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-item .fi-size { color: var(--text-dim); font-size: .78rem; }
+    .file-item .fi-rm {
+      background: none; border: none; color: var(--warn); cursor: pointer;
+      font-size: 1rem; padding: 0 2px; line-height: 1;
+    }
+
+    .upload-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    .upload-grid .full-col { grid-column: 1 / -1; }
+    @media (max-width: 640px) { .upload-grid { grid-template-columns: 1fr; } }
+
+    .zone-label {
+      font-size: .88rem; color: var(--accent); font-weight: 600;
+      margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    }
+    .zone-badge {
+      font-size: .7rem; padding: 2px 7px; border-radius: 20px;
+      background: rgba(88,166,255,.15); color: var(--accent);
+    }
+    .zone-badge.optional { background: rgba(63,185,80,.12); color: var(--accent2); }
+
+    /* ── Process button ── */
+    #processBtn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, #1f6feb, #388bfd);
+      border: none; border-radius: var(--radius);
+      color: #fff; font-size: 1rem; font-weight: 600;
+      cursor: pointer; transition: opacity .2s, transform .1s; letter-spacing: .04em;
+    }
+    #processBtn:hover:not(:disabled) { opacity: .88; }
+    #processBtn:active:not(:disabled) { transform: scale(.99); }
+    #processBtn:disabled { opacity: .45; cursor: not-allowed; }
+
+    #analyzeBtn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg,#2ea043,#3fb950);
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 1rem; font-weight: 600;
+      cursor: pointer; letter-spacing: .04em; font-family: inherit;
+      transition: opacity .2s;
+    }
+    #analyzeBtn:hover:not(:disabled) { opacity: .88; }
+    #analyzeBtn:disabled { opacity: .45 !important; cursor: not-allowed !important; pointer-events: auto !important; }
+
+    #reAnalyzeBtn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg,#1a4a6b,#2160a0);
+      border: none; border-radius: 8px;
+      color: #fff; font-size: .9rem; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .2s;
+    }
+    #reAnalyzeBtn:hover:not(:disabled) { opacity: .88; }
+    #reAnalyzeBtn:disabled { opacity: .45 !important; cursor: not-allowed !important; }
+
+    /* ── Progress ── */
+    .progress-wrap { display: none; flex-direction: column; gap: 8px; }
+    .progress-wrap.visible { display: flex; }
+    .progress-bar-bg { background: var(--bg3); border-radius: 99px; height: 8px; overflow: hidden; }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #1f6feb, #388bfd);
+      border-radius: 99px; transition: width .4s ease; width: 0%;
+    }
+    .progress-msg { font-size: .85rem; color: var(--text-dim); }
+    .progress-pct { font-size: .85rem; color: var(--accent); font-weight: 600; }
+
+    /* ── Results ── */
+    #resultsSection { display: none; }
+    #resultsSection.visible { display: block; }
+
+    .dl-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 6px; border: 1px solid;
+      font-size: .9rem; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: opacity .2s; font-family: inherit;
+    }
+    .dl-btn:hover { opacity: .8; }
+    .dl-btn.ppt  { background: rgba(88,166,255,.12); border-color: var(--accent);  color: var(--accent);  }
+    .dl-btn.md   { background: rgba(63,185,80,.12);  border-color: var(--accent2); color: var(--accent2); }
+    .dl-btn.json { background: rgba(227,179,65,.12); border-color: var(--warn2);   color: var(--warn2);   }
+
+    /* ── Per-question accordion ── */
+    .q-accordion { display: flex; flex-direction: column; gap: 8px; }
+
+    .q-item {
+      border: 1px solid var(--border); border-radius: 6px;
+      overflow: hidden; transition: border-color .2s;
+    }
+    .q-item.open { border-color: var(--accent); }
+
+    .q-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 16px; cursor: pointer;
+      background: var(--bg3); user-select: none;
+      transition: background .15s;
+    }
+    .q-header:hover { background: #2a2f38; }
+
+    .q-num {
+      font-weight: 700; font-size: .92rem; color: var(--accent);
+      min-width: 42px;
+    }
+    .q-kp-preview {
+      flex: 1; font-size: .82rem; color: var(--text-dim);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .q-chevron {
+      font-size: .75rem; color: var(--text-dim);
+      transition: transform .2s; flex-shrink: 0;
+    }
+    .q-item.open .q-chevron { transform: rotate(180deg); }
+
+    .q-body {
+      display: none; padding: 14px 16px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    .q-item.open .q-body { display: block; }
+
+    .q-section-label {
+      font-size: .75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .07em; color: var(--text-dim); margin-bottom: 7px;
+    }
+    .kp-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+    .kp-tag {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 8px;
+      font-size: .78rem; color: var(--text);
+    }
+    .q-approach {
+      font-size: .87rem; color: #b0bec5; line-height: 1.65;
+      border-left: 3px solid var(--accent);
+      padding-left: 12px;
+    }
+
+    /* ── Topic groups ── */
+    .topic-grid {
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .topic-row {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 12px 16px;
+      display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    }
+    .topic-name {
+      font-size: .9rem; font-weight: 600; color: var(--text);
+      min-width: 0; flex-shrink: 0;
+    }
+    .topic-nums { display: flex; flex-wrap: wrap; gap: 6px; }
+    .topic-num-badge {
+      background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.3);
+      border-radius: 4px; padding: 2px 9px;
+      font-size: .8rem; color: var(--accent); font-weight: 600;
+    }
+
+    /* ── Board writing ── */
+    #boardPreview {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 20px 24px;
+      white-space: pre-wrap;
+      font-family: "Cascadia Code", "Consolas", monospace;
+      font-size: .85rem; line-height: 1.7; color: #cdd9e5;
+      max-height: 440px; overflow-y: auto;
+    }
+
+    /* ── Preview thumbnails ── */
+    .preview-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;
+      margin-top: 4px;
+    }
+    .thumb-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: border-color .2s;
+    }
+    .thumb-card:hover { border-color: var(--accent); }
+    .thumb-card img { width: 100%; display: block; background: #fff; cursor: zoom-in; }
+    .thumb-card .thumb-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 8px;
+    }
+    .thumb-card .thumb-label { font-size: .78rem; color: var(--text-dim); }
+    .thumb-actions { display: flex; gap: 5px; }
+    .split-btn, .del-btn, .merge-btn {
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      font-size: .72rem; padding: 2px 7px; cursor: pointer;
+      transition: border-color .2s, color .2s; white-space: nowrap;
+    }
+    .split-btn { color: var(--text-dim); }
+    .split-btn:hover { border-color: var(--warn2); color: var(--warn2); }
+    .merge-btn { color: var(--text-dim); }
+    .merge-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+    .del-btn { color: var(--text-dim); }
+    .del-btn:hover { border-color: var(--warn); color: var(--warn); }
+
+    /* ── Split modal ── */
+    #splitModal {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,.82); align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+    }
+    #splitModal.open { display: flex; }
+    #splitCanvas {
+      cursor: crosshair; max-width: 90vw; max-height: 72vh;
+      border-radius: 6px; display: block;
+    }
+    .split-controls {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+    }
+    .split-controls label { color: var(--text); font-size: .9rem; margin: 0; }
+    .split-controls input[type="number"] {
+      width: 80px; padding: 6px 10px;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: .9rem;
+    }
+    .split-hint { font-size: .82rem; color: var(--text-dim); }
+    .split-confirm {
+      padding: 8px 24px; background: var(--accent); border: none;
+      border-radius: 6px; color: #fff; font-size: .9rem; font-weight: 600; cursor: pointer;
+    }
+    .split-cancel {
+      padding: 8px 20px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: .9rem; cursor: pointer;
+    }
+
+    /* ── Modal ── */
+    #modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.82); align-items: center; justify-content: center;
+    }
+    #modal.open { display: flex; }
+    #modal img { max-width: 82vw; max-height: 74vh; border-radius: var(--radius); background: #fff; }
+    #modalContent { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    #modal .close-btn {
+      position: fixed; top: 24px; right: 32px;
+      background: var(--bg2); border: 1px solid var(--border);
+      color: var(--text); font-size: 1.4rem; width: 40px; height: 40px;
+      border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .modal-nav {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      background: rgba(22,27,34,.85); border: 1px solid var(--border);
+      color: var(--text); font-size: 1.6rem; width: 44px; height: 64px;
+      border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .15s; user-select: none;
+    }
+    .modal-nav:hover { background: var(--bg3); }
+    .modal-nav:disabled { opacity: .25; cursor: default; }
+    #modalPrev { left: 16px; }
+    #modalNext { right: 16px; }
+    #modalLabel {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: rgba(22,27,34,.85); border: 1px solid var(--border);
+      color: var(--text-dim); font-size: .85rem; padding: 4px 16px; border-radius: 20px;
+    }
+    #modalActions {
+      display: flex; gap: 12px;
+    }
+    .modal-action-btn {
+      background: rgba(22,27,34,.9); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 22px; font-size: 1rem; cursor: pointer;
+      transition: border-color .2s, color .2s, background .2s;
+    }
+    .modal-action-btn.split  { color: var(--warn2); }
+    .modal-action-btn.split:hover  { border-color: var(--warn2); }
+    .modal-action-btn.merge  { color: var(--accent2); }
+    .modal-action-btn.merge:hover  { border-color: var(--accent2); }
+    .modal-action-btn.del    { color: var(--warn); }
+    .modal-action-btn.del:hover    { border-color: var(--warn); }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      border-radius: 8px; padding: 12px 24px;
+      font-size: .9rem; max-width: 480px; text-align: center;
+      z-index: 300; display: none;
+      /* default = success (green) */
+      background: #0d2e1a; border: 1px solid #3fb950; color: #7ee787;
+    }
+    #toast.error { background: #3d1515; border-color: var(--warn); color: #ff9492; }
+    #toast.show { display: block; animation: fadeInUp .3s ease; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ── Confirm dialog ── */
+    #confirmDlg {
+      display: none; position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.65); align-items: center; justify-content: center;
+    }
+    #confirmDlg.open { display: flex; }
+    #confirmBox {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+      padding: 28px 32px; min-width: 260px; text-align: center;
+    }
+    #confirmBox p { margin: 0 0 20px; font-size: 1rem; color: var(--text); }
+    #confirmBox .dlg-btns { display: flex; gap: 12px; justify-content: center; }
+    #confirmBox .dlg-ok {
+      padding: 8px 24px; background: var(--warn); border: none;
+      border-radius: 6px; color: #fff; font-size: .95rem; cursor: pointer;
+    }
+    #confirmBox .dlg-cancel {
+      padding: 8px 20px; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: .95rem; cursor: pointer;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📐</div>
+  <h1>物理教学备课工具 <span class="sub">by EonMind</span></h1>
+</header>
+
+<div class="container">
+
+  <!-- API Key -->
+  <div class="card">
+    <h2><span class="icon">🔑</span> DeepSeek API 密钥</h2>
+    <label for="apiKey">API Key（保存在浏览器本地，不上传服务器）</label>
+    <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <h2><span class="icon">📁</span> 上传文件</h2>
+    <div class="upload-grid">
+      <div>
+        <div class="zone-label">📊 参考PPT <span class="zone-badge">必填 · 多文件</span></div>
+        <div class="drop-zone" id="refZone">
+          <input type="file" id="refInput" accept=".pdf" multiple />
+          <div class="dz-icon">📂</div>
+          <div class="dz-title">拖拽或点击上传</div>
+          <div class="dz-sub">已转为PDF的参考PPT文件（可多个）</div>
+        </div>
+        <div class="file-list" id="refList"></div>
+      </div>
+      <div>
+        <div class="zone-label">📝 作业PDF <span class="zone-badge">必填 · 单文件</span></div>
+        <div class="drop-zone" id="hwZone">
+          <input type="file" id="hwInput" accept=".pdf" />
+          <div class="dz-icon">📄</div>
+          <div class="dz-title">拖拽或点击上传</div>
+          <div class="dz-sub">学生作业PDF</div>
+        </div>
+        <div class="file-list" id="hwList"></div>
+      </div>
+      <div class="full-col">
+        <div class="zone-label">📎 补充资料 <span class="zone-badge optional">选填 · 多文件</span></div>
+        <div class="drop-zone" id="suppZone">
+          <input type="file" id="suppInput" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" multiple />
+          <div class="dz-icon">🗂️</div>
+          <div class="dz-title">拖拽或点击上传</div>
+          <div class="dz-sub">PDF、Word、图片均可（选填）</div>
+        </div>
+        <div class="file-list" id="suppList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Options -->
+  <div class="card">
+    <h2><span class="icon">⚙️</span> 处理选项</h2>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:.82rem;color:var(--text-dim);margin-bottom:8px;display:block;">文档类型</label>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;cursor:pointer;margin:0;color:var(--text);font-size:.9rem;" id="modeHwLabel">
+          <input type="radio" name="docMode" value="homework" checked style="accent-color:var(--accent);" onchange="onModeChange()" />
+          📝 学生作业
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;cursor:pointer;margin:0;color:var(--text);font-size:.9rem;" id="modeExamLabel">
+          <input type="radio" name="docMode" value="exam" style="accent-color:var(--accent);" onchange="onModeChange()" />
+          📄 考试试卷
+        </label>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:.82rem;color:var(--text-dim);margin-bottom:8px;display:block;">PPT 排序方式</label>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;cursor:pointer;margin:0;color:var(--text);font-size:.9rem;" id="radioNum">
+          <input type="radio" name="sortOrder" value="number" checked style="accent-color:var(--accent);" onchange="onSortOrderChange()" />
+          📋 按题号顺序
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 16px;cursor:pointer;margin:0;color:var(--text);font-size:.9rem;" id="radioTopic">
+          <input type="radio" name="sortOrder" value="topic" style="accent-color:var(--accent);" onchange="onSortOrderChange()" />
+          🗂️ 按专题分组（每页显示专题名）
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Process -->
+  <div class="card">
+    <button id="processBtn" onclick="startProcessing()">⚡ 开始处理</button>
+    <div style="height:16px;"></div>
+    <div class="progress-wrap" id="progressWrap">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="progress-msg" id="progressMsg">等待处理…</div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview section (shown after phase 1, before AI analysis) -->
+  <div id="previewSection" style="display:none;">
+    <div class="card">
+      <h2><span class="icon">🖼️</span> 题目切割预览 · 检查无误后开始AI分析</h2>
+      <div class="preview-grid" id="previewGrid"></div>
+
+      <!-- AI analysis options -->
+      <div id="analyzeOptions" style="margin-top:20px;padding:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);">
+        <div style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">AI 分析选项</div>
+
+        <!-- 分析知识点 row -->
+        <div id="analyzeKpRow" style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-size:.9rem;color:var(--text);">
+            <input type="checkbox" id="chkAnalyzeKp" checked style="accent-color:var(--accent);width:15px;height:15px;" onchange="updateAnalyzeBtn()" />
+            <span>分析知识点</span>
+          </label>
+          <span id="analyzeKpHint" style="font-size:.8rem;color:var(--text-dim);">（PPT每页左上角显示核心考点红字）</span>
+          <span id="analyzeKpForced" style="display:none;font-size:.8rem;color:var(--warn2);">⚠ 按专题分组必须开启</span>
+        </div>
+
+        <!-- 生成板书 row -->
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0;font-size:.9rem;color:var(--text);">
+          <input type="checkbox" id="chkGenBoard" checked style="accent-color:var(--accent);width:15px;height:15px;" onchange="updateAnalyzeBtn()" />
+          <span>生成板书</span>
+          <span style="font-size:.8rem;color:var(--text-dim);">（生成 Markdown 板书笔记）</span>
+        </label>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button id="analyzeBtn" onclick="startAnalyze()">
+          ✅ 确认切割，开始AI分析
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="resultsSection">
+
+    <!-- Downloads -->
+    <div class="card">
+      <h2><span class="icon">⬇️</span> 下载结果</h2>
+      <div class="dl-buttons">
+        <button class="dl-btn ppt"  id="dlPpt"  onclick="dlFile('ppt')">📊 下载 PPT</button>
+        <button class="dl-btn md"   id="dlMd"   onclick="dlFile('markdown')">📝 下载板书（Markdown）</button>
+        <button class="dl-btn json" id="dlJson" onclick="dlFile('json')">📦 下载分析数据（JSON）</button>
+      </div>
+    </div>
+
+    <!-- Per-question analysis -->
+    <div class="card" id="cardQAnalysis">
+      <h2><span class="icon">🔍</span> 逐题分析</h2>
+      <div class="q-accordion" id="qAccordion"></div>
+    </div>
+
+    <!-- Topic groups -->
+    <div class="card" id="cardTopicGroups">
+      <h2><span class="icon">🗂️</span> 专题归类</h2>
+      <div class="topic-grid" id="topicGrid"></div>
+    </div>
+
+    <!-- Board writing -->
+    <div class="card">
+      <h2><span class="icon">📋</span> 板书预览</h2>
+      <pre id="boardPreview"></pre>
+    </div>
+
+    <!-- Thumbnails (in results, same grid re-rendered) -->
+    <div class="card">
+      <h2><span class="icon">🖼️</span> 题目图片预览</h2>
+      <div class="preview-grid" id="resultPreviewGrid"></div>
+      <div style="margin-top:16px;">
+        <button id="reAnalyzeBtn" onclick="startAnalyze()">🔄 重新AI分析（修改题目后可再次运行）</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<div id="modal">
+  <button class="close-btn" onclick="closeModal()">✕</button>
+  <button class="modal-nav" id="modalPrev" onclick="modalNav(-1)">‹</button>
+  <div id="modalContent">
+    <img id="modalImg" src="" alt="题目大图" />
+    <div id="modalActions">
+      <button class="modal-action-btn split" onclick="modalDoSplit()">✂️ 分割</button>
+      <button class="modal-action-btn merge" onclick="modalDoMerge()">⬇️ 合并下一题</button>
+      <button class="modal-action-btn del"   onclick="modalDoDelete()">🗑 删除</button>
+    </div>
+  </div>
+  <button class="modal-nav" id="modalNext" onclick="modalNav(1)">›</button>
+  <div id="modalLabel"></div>
+</div>
+
+<!-- Split modal -->
+<div id="splitModal">
+  <div class="split-hint" id="splitHint">第①步：点击图片，设置上题结束线（红色）</div>
+  <canvas id="splitCanvas"></canvas>
+  <div class="split-controls">
+    <label>下半部分题号：<input type="number" id="splitNewNum" min="1" max="99" value="" /></label>
+    <button class="split-confirm" id="splitConfirmBtn" onclick="confirmSplit()" disabled>✂️ 确认分割</button>
+    <button class="split-cancel" onclick="closeSplitModal()">取消</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="confirmDlg">
+  <div id="confirmBox">
+    <p id="confirmMsg"></p>
+    <div class="dlg-btns">
+      <button class="dlg-ok"     onclick="_confirmClick(true)">删除</button>
+      <button class="dlg-cancel" onclick="_confirmClick(false)">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const state = {
+  refFileIds:  [],
+  hwFileId:    null,
+  suppFileIds: [],
+  jobId:       null,
+  pollTimer:   null,
+};
+
+/* API key */
+const apiKeyInput = document.getElementById("apiKey");
+apiKeyInput.value = localStorage.getItem("deepseek_api_key") || "";
+apiKeyInput.addEventListener("input", () =>
+  localStorage.setItem("deepseek_api_key", apiKeyInput.value.trim())
+);
+
+/* Restore last job on page load */
+(async () => {
+  const savedId = localStorage.getItem("last_job_id");
+  if (!savedId) return;
+  try {
+    const resp = await fetch(`/status/${savedId}`);
+    if (!resp.ok) { localStorage.removeItem("last_job_id"); return; }
+    const data = await resp.json();
+    state.jobId = savedId;
+    if (data.status === "preview") {
+      await loadPreview();
+      showToast("已恢复上次切题预览，可继续操作");
+    } else if (data.status === "analyzing") {
+      _setAnalyzeBtns(true);
+      document.getElementById("processBtn").disabled = true;
+      showProgress(true);
+      setProgress(data.progress || 0, data.message || "AI分析中…");
+      pollStatus();
+    } else if (data.status === "done") {
+      await loadResults();
+    }
+  } catch(e) { localStorage.removeItem("last_job_id"); }
+})();
+
+/* Drop zones */
+const HAS_FSA = typeof window.showOpenFilePicker === "function";
+
+function setupZone(zoneId, inputId, listId, multi, stateKey, pickerId, pickerTypes) {
+  const zone  = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  ["dragenter","dragover"].forEach(ev => zone.addEventListener(ev, e => {
+    e.preventDefault(); zone.classList.add("dragover");
+  }));
+  ["dragleave","drop"].forEach(ev => zone.addEventListener(ev, e => {
+    e.preventDefault(); zone.classList.remove("dragover");
+  }));
+  zone.addEventListener("drop", e =>
+    handleFiles(Array.from(e.dataTransfer.files), listId, multi, stateKey)
+  );
+  if (HAS_FSA && pickerId) {
+    // Use File System Access API for click — remembers folder per pickerId
+    input.style.pointerEvents = "none";
+    zone.style.cursor = "pointer";
+    zone.addEventListener("click", () =>
+      openFilePicker(pickerId, pickerTypes, multi, listId, stateKey)
+    );
+  } else {
+    input.addEventListener("change", () => {
+      handleFiles(Array.from(input.files), listId, multi, stateKey);
+      input.value = "";
+    });
+  }
+}
+
+async function openFilePicker(pickerId, types, multiple, listId, stateKey) {
+  let handles;
+  try {
+    handles = await window.showOpenFilePicker({
+      id: pickerId,
+      multiple,
+      types,
+      excludeAcceptAllOption: false,
+    });
+  } catch(e) {
+    if (e.name !== "AbortError") showToast("打开失败：" + e.message, "error");
+    return;
+  }
+  const files = await Promise.all(handles.map(h => h.getFile()));
+  handleFiles(files, listId, multiple, stateKey);
+}
+
+const _DL_CONF = {
+  ppt:      { ext: ".pptx", mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation", pickerId: "ppt_save",  label: "PPT 文件" },
+  markdown: { ext: ".md",   mime: "text/markdown",  pickerId: "md_save",   label: "Markdown 文件" },
+  json:     { ext: ".json", mime: "application/json", pickerId: "json_save", label: "JSON 文件" },
+};
+const _DL_NAME_MAP = { ppt: "作业讲评", markdown: "笔记", json: "分析" };
+
+async function dlFile(type) {
+  if (!state.jobId) { showToast("尚无可下载内容", "error"); return; }
+  const job = _DL_CONF[type];
+  const hw  = document.getElementById("hwList").querySelector(".fi-name")?.textContent?.replace(/\.[^.]+$/, "") || "作业";
+  const suggestedName = `${hw} ${_DL_NAME_MAP[type]}${job.ext}`;
+  const url = `/download/${state.jobId}/${type}`;
+
+  if (HAS_FSA) {
+    let handle;
+    try {
+      handle = await window.showSaveFilePicker({
+        id: job.pickerId,
+        suggestedName,
+        types: [{ description: job.label, accept: { [job.mime]: [job.ext] } }],
+      });
+    } catch(e) {
+      if (e.name !== "AbortError") showToast("保存失败：" + e.message, "error");
+      return;
+    }
+    const blob = await (await fetch(url)).blob();
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    showToast("已保存：" + suggestedName);
+  } else {
+    const a = document.createElement("a");
+    a.href = url; a.download = suggestedName; a.click();
+  }
+}
+
+const ALLOWED_EXT = [".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp"];
+async function handleFiles(files, listId, multi, stateKey) {
+  if (!files.length) return;
+  const valid = files.filter(f => ALLOWED_EXT.some(e => f.name.toLowerCase().endsWith(e)));
+  if (!valid.length) { showToast("请上传 PDF / Word / 图片文件", "error"); return; }
+  // Homework zone: only pdf
+  const toUpload = stateKey === "hwFileId"
+    ? valid.filter(f => f.name.toLowerCase().endsWith(".pdf")).slice(0, 1)
+    : (multi ? valid : [valid[0]]);
+  if (!toUpload.length) { showToast("作业请上传 PDF 文件", "error"); return; }
+  const formData = new FormData();
+  toUpload.forEach(f => formData.append("files", f));
+  let resp, data;
+  try {
+    resp = await fetch("/upload", { method: "POST", body: formData });
+    data = await resp.json();
+  } catch(e) { showToast("上传失败：" + e.message, "error"); return; }
+  if (!resp.ok || data.error) { showToast("上传错误：" + (data.error || resp.status), "error"); return; }
+  if (!multi) {
+    state[stateKey] = data.files[0].id;
+    renderFileList([data.files[0]], listId, stateKey);
+  } else {
+    state[stateKey].push(...data.files.map(f => f.id));
+    data.files.forEach(f => appendFileItem(f, listId, stateKey));
+  }
+}
+
+function renderFileList(files, listId, stateKey) {
+  document.getElementById(listId).innerHTML = "";
+  files.forEach(f => appendFileItem(f, listId, stateKey));
+}
+
+function appendFileItem(f, listId, stateKey) {
+  const list = document.getElementById(listId);
+  const item = document.createElement("div");
+  item.className = "file-item";
+  item.dataset.id = f.id;
+  item.innerHTML = `
+    <span class="fi-icon">📄</span>
+    <span class="fi-name" title="${esc(f.name)}">${esc(f.name)}</span>
+    <span class="fi-size">${formatSize(f.size)}</span>
+    <button class="fi-rm" onclick="removeFile('${f.id}','${listId}','${stateKey}')">✕</button>
+  `;
+  list.appendChild(item);
+}
+
+function removeFile(id, listId, stateKey) {
+  if (Array.isArray(state[stateKey])) state[stateKey] = state[stateKey].filter(x => x !== id);
+  else state[stateKey] = null;
+  const item = document.querySelector(`#${listId} [data-id="${id}"]`);
+  if (item) item.remove();
+}
+
+const _PDF_TYPE  = [{ description: "PDF 文件", accept: { "application/pdf": [".pdf"] } }];
+const _SUPP_TYPE = [{ description: "补充资料", accept: {
+  "application/pdf": [".pdf"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "image/png": [".png"], "image/jpeg": [".jpg", ".jpeg"], "image/webp": [".webp"],
+}}];
+setupZone("refZone",  "refInput",  "refList",  true,  "refFileIds", "ref_files",  _PDF_TYPE);
+setupZone("hwZone",   "hwInput",   "hwList",   false, "hwFileId",   "hw_file",    _PDF_TYPE);
+setupZone("suppZone", "suppInput", "suppList", true,  "suppFileIds","supp_files", _SUPP_TYPE);
+
+/* Mode switch */
+function onModeChange() {
+  const isExam = document.querySelector('input[name="docMode"]:checked').value === "exam";
+  // Update upload zone label
+  const hwBadgeEl = document.querySelector('[id="hwZone"]')?.closest('div')?.querySelector('.zone-label');
+  if (hwBadgeEl) {
+    hwBadgeEl.innerHTML = isExam
+      ? '📄 试卷PDF <span class="zone-badge">必填 · 单文件</span>'
+      : '📝 作业PDF <span class="zone-badge">必填 · 单文件</span>';
+  }
+  const hwSubEl = document.querySelector('#hwZone .dz-sub');
+  if (hwSubEl) hwSubEl.textContent = isExam ? '学生考试试卷PDF' : '学生作业PDF';
+}
+
+/* Sort order change — update analyze options visibility */
+function onSortOrderChange() {
+  const isTopic = document.querySelector('input[name="sortOrder"]:checked')?.value === "topic";
+  const chk = document.getElementById('chkAnalyzeKp');
+  const hint = document.getElementById('analyzeKpHint');
+  const forced = document.getElementById('analyzeKpForced');
+  if (!chk) return;
+  if (isTopic) {
+    chk.checked = true;
+    chk.disabled = true;
+    if (hint)   hint.style.display = 'none';
+    if (forced) forced.style.display = 'inline';
+  } else {
+    chk.disabled = false;
+    if (hint)   hint.style.display = 'inline';
+    if (forced) forced.style.display = 'none';
+  }
+  updateAnalyzeBtn();
+}
+
+function updateAnalyzeBtn() {
+  const analyzeKp = document.getElementById('chkAnalyzeKp')?.checked ?? true;
+  const genBoard  = document.getElementById('chkGenBoard')?.checked ?? true;
+  const btn = document.getElementById('analyzeBtn');
+  const reBtn = document.getElementById('reAnalyzeBtn');
+  if (!analyzeKp && !genBoard) {
+    if (btn)   btn.textContent   = '✅ 确认切割，直接导出 PPT';
+    if (reBtn) reBtn.textContent = '🔄 重新导出 PPT（不调用AI）';
+  } else {
+    if (btn)   btn.textContent   = '✅ 确认切割，开始AI分析';
+    if (reBtn) reBtn.textContent = '🔄 重新AI分析（修改题目后可再次运行）';
+  }
+}
+
+/* Processing */
+async function startProcessing() {
+  const apiKey  = apiKeyInput.value.trim();
+  const docMode = document.querySelector('input[name="docMode"]:checked').value;
+  const hwLabel = docMode === "exam" ? "试卷" : "作业";
+  if (!apiKey)         { showToast("请输入 DeepSeek API 密钥", "error"); return; }
+  if (!state.hwFileId) { showToast(`请上传${hwLabel} PDF`, "error"); return; }
+
+  _setAnalyzeBtns(true);
+  const btn = document.getElementById("processBtn");
+  btn.disabled = true;
+  showProgress(true);
+  setProgress(0, "提交任务…");
+  hideResults();
+
+  let resp, data;
+  try {
+    resp = await fetch("/process", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        homework_id:    state.hwFileId,
+        reference_ids:  state.refFileIds,
+        supplement_ids: state.suppFileIds,
+        api_key:        apiKey,
+        sort_order:     document.querySelector('input[name="sortOrder"]:checked').value,
+        mode:           docMode,
+      }),
+    });
+    data = await resp.json();
+  } catch(e) {
+    showToast("请求失败：" + e.message, "error");
+    btn.disabled = false;
+    _setAnalyzeBtns(false);
+    return;
+  }
+  if (!resp.ok || data.error) {
+    showToast("错误：" + (data.error || resp.status), "error");
+    btn.disabled = false;
+    _setAnalyzeBtns(false);
+    return;
+  }
+  state.jobId = data.job_id;
+  localStorage.setItem("last_job_id", state.jobId);
+  pollStatus();
+}
+
+function pollStatus() {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(async () => {
+    try {
+      const resp = await fetch(`/status/${state.jobId}`);
+      const data = await resp.json();
+      setProgress(data.progress, data.message);
+
+      if (data.status === "preview") {
+        clearInterval(state.pollTimer);
+        document.getElementById("processBtn").disabled = false;
+        _setAnalyzeBtns(false);
+        showProgress(false);
+        await loadPreview();
+
+      } else if (data.status === "done") {
+        clearInterval(state.pollTimer);
+        _setAnalyzeBtns(false);
+        showProgress(false);
+        await loadResults();
+
+      } else if (data.status === "error") {
+        clearInterval(state.pollTimer);
+        document.getElementById("processBtn").disabled = false;
+        _setAnalyzeBtns(false);
+        showProgress(false);
+        showToast("处理失败：" + (data.error || data.message), "error");
+      }
+    } catch(e) {
+      // Status fetch failed (server restarted etc.) — stop polling, re-enable buttons
+      clearInterval(state.pollTimer);
+      _setAnalyzeBtns(false);
+      document.getElementById("processBtn").disabled = false;
+      showProgress(false);
+    }
+  }, 1200);
+}
+
+async function loadPreview() {
+  const resp    = await fetch(`/preview/${state.jobId}`);
+  const preview = await resp.json();
+  renderThumbnails(preview.images || [], preview.meta || [], "previewGrid");
+  document.getElementById("previewSection").style.display = "block";
+  document.getElementById("previewSection").scrollIntoView({ behavior: "smooth" });
+  // Always ensure analyzeBtn is enabled whenever preview is shown
+  _setAnalyzeBtns(false);
+  document.getElementById("processBtn").disabled = false;
+}
+
+function _setAnalyzeBtns(disabled) {
+  const a = document.getElementById("analyzeBtn");
+  const b = document.getElementById("reAnalyzeBtn");
+  if (a) a.disabled = disabled;
+  if (b) b.disabled = disabled;
+}
+
+async function startAnalyze() {
+  if (!state.jobId) { showToast("请先上传作业并完成切题", "error"); return; }
+  _setAnalyzeBtns(true);
+  showProgress(true);
+  setProgress(0, "准备开始AI分析…");
+
+  const analyzeKp  = document.getElementById('chkAnalyzeKp')?.checked ?? true;
+  const genBoard   = document.getElementById('chkGenBoard')?.checked ?? true;
+  state.lastAnalyzeKp = analyzeKp;
+  state.lastGenBoard  = genBoard;
+
+  let resp, data;
+  try {
+    resp = await fetch(`/analyze/${state.jobId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ analyze_knowledge: analyzeKp, generate_board: genBoard }),
+    });
+    data = await resp.json();
+  } catch(e) {
+    showToast("启动分析失败：" + e.message, "error");
+    _setAnalyzeBtns(false);
+    showProgress(false);
+    return;
+  }
+  if (!data.ok) {
+    showToast("启动分析失败：" + (data.error || ""), "error");
+    _setAnalyzeBtns(false);
+    showProgress(false);
+    return;
+  }
+  pollStatus();
+}
+
+async function loadResults() {
+  const [resultsResp, previewResp] = await Promise.all([
+    fetch(`/results/${state.jobId}`),
+    fetch(`/preview/${state.jobId}`),
+  ]);
+  const results = await resultsResp.json();
+  const preview = await previewResp.json();
+
+  // Show/hide download buttons based on what was actually generated
+  const dlMd   = document.getElementById('dlMd');
+  const dlJson = document.getElementById('dlJson');
+  if (dlMd)   dlMd.style.display   = state.lastGenBoard  ? '' : 'none';
+  if (dlJson) dlJson.style.display = state.lastAnalyzeKp ? '' : 'none';
+  const cardQA = document.getElementById('cardQAnalysis');
+  const cardTG = document.getElementById('cardTopicGroups');
+  if (cardQA) cardQA.style.display = state.lastAnalyzeKp ? '' : 'none';
+  if (cardTG) cardTG.style.display = state.lastAnalyzeKp ? '' : 'none';
+
+  // download buttons use dlFile() with state.jobId — no href needed
+
+  /* ── Per-question accordion ── */
+  const accordion = document.getElementById("qAccordion");
+  accordion.innerHTML = "";
+  (results.questions || []).forEach(q => {
+    const kpHtml = (q.knowledge_points || [])
+      .map(k => `<span class="kp-tag">${esc(k)}</span>`).join("");
+    const preview_kp = (q.knowledge_points || []).slice(0, 3).join("、") || "（暂无）";
+    const approach   = q.approach || "";
+
+    const item = document.createElement("div");
+    item.className = "q-item";
+    item.innerHTML = `
+      <div class="q-header" onclick="toggleQ(this)">
+        <span class="q-num">第 ${q.number} 题</span>
+        <span class="q-kp-preview">${esc(preview_kp)}</span>
+        <span class="q-chevron">▼</span>
+      </div>
+      <div class="q-body">
+        <div class="q-section-label">知识点</div>
+        <div class="kp-list">${kpHtml || '<span class="kp-tag" style="color:var(--text-dim)">—</span>'}</div>
+        ${approach ? `<div class="q-section-label">解题思路</div><div class="q-approach">${esc(approach)}</div>` : ""}
+      </div>
+    `;
+    accordion.appendChild(item);
+  });
+
+  /* ── Topic groups ── */
+  const topicGrid = document.getElementById("topicGrid");
+  topicGrid.innerHTML = "";
+  const groups = results.topic_groups || [];
+  if (groups.length === 0) {
+    topicGrid.innerHTML = `<div style="color:var(--text-dim);font-size:.88rem;">（暂无专题归类）</div>`;
+  } else {
+    groups.forEach(g => {
+      const numsHtml = (g.numbers || [])
+        .map(n => `<span class="topic-num-badge">第${n}题</span>`).join("");
+      const row = document.createElement("div");
+      row.className = "topic-row";
+      row.innerHTML = `
+        <span class="topic-name">${esc(g.topic)}</span>
+        <div class="topic-nums">${numsHtml}</div>
+      `;
+      topicGrid.appendChild(row);
+    });
+  }
+
+  /* ── Board writing ── */
+  document.getElementById("boardPreview").textContent = results.board_writing || "";
+
+  /* ── Thumbnails in results ── */
+  renderThumbnails(preview.images || [], preview.meta || [], "resultPreviewGrid");
+
+  // Hide previewSection so _getActiveGrid() correctly returns "resultPreviewGrid"
+  document.getElementById("previewSection").style.display = "none";
+  document.getElementById("previewGrid").innerHTML = "";
+
+  showResults();
+}
+
+function renderThumbnails(images, metas, gridId) {
+  const grid = document.getElementById(gridId || "previewGrid");
+  grid.innerHTML = "";
+  images.forEach((b64, i) => {
+    const meta = metas[i] || {};
+    const card = document.createElement("div");
+    card.className = "thumb-card";
+    card.dataset.index = i;
+    const src = `data:image/png;base64,${b64}`;
+    const num = meta.number || (i + 1);
+    card.innerHTML = `
+      <img src="${src}" alt="第${num}题" loading="lazy" />
+      <div class="thumb-footer">
+        <span class="thumb-label">第 ${num} 题</span>
+        <div class="thumb-actions">
+          <button class="split-btn"  onclick="openSplitModal(${i}, ${num})">✂️ 分割</button>
+          <button class="merge-btn"  onclick="mergeNext(${i})" title="与下一题合并后重新分割">⬇️ 合并</button>
+          <button class="del-btn"    onclick="deleteQuestion(${i})">🗑</button>
+        </div>
+      </div>
+    `;
+    card.querySelector("img").addEventListener("click", () => {
+      modalState.total = images.length;
+      openModal(src, i);
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ── Split modal (two-line) ── */
+// step 0 = waiting for line1 (red, top question end)
+// step 1 = waiting for line2 (blue, bottom question start)
+// step 2 = both set, ready to confirm
+const splitState = { index: -1, origNum: 0, step: 0, yTop: -1, yBot: -1, img: null, fromModal: false };
+
+async function openSplitModal(index, origNum) {
+  splitState.index   = index;
+  splitState.origNum = origNum;
+  splitState.step    = 0;
+  splitState.yTop    = -1;
+  splitState.yBot    = -1;
+  document.getElementById("splitNewNum").value = origNum + 1;
+  document.getElementById("splitConfirmBtn").disabled = true;
+  document.getElementById("splitHint").textContent = "第①步：点击图片，设置上题结束线（红色虚线）";
+
+  const resp = await fetch(`/full_image/${state.jobId}/${index}`);
+  const data = await resp.json();
+  const img  = new Image();
+  img.onload = () => {
+    splitState.img = img;
+    drawSplitCanvas();
+    document.getElementById("splitModal").classList.add("open");
+  };
+  img.src = `data:image/png;base64,${data.image}`;
+}
+
+function drawSplitCanvas() {
+  const img    = splitState.img;
+  const canvas = document.getElementById("splitCanvas");
+  const maxW   = window.innerWidth  * 0.88;
+  const maxH   = window.innerHeight * 0.65;
+  const scale  = Math.min(maxW / img.width, maxH / img.height, 1);
+  canvas.width  = img.width  * scale;
+  canvas.height = img.height * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.setLineDash([8, 4]);
+  ctx.lineWidth = 2.5;
+
+  const yTopPx = splitState.yTop >= 0 ? canvas.height * splitState.yTop : -1;
+  const yBotPx = splitState.yBot >= 0 ? canvas.height * splitState.yBot : -1;
+
+  // Red line = A 结束位置
+  if (yTopPx >= 0) {
+    ctx.strokeStyle = "#f78166";
+    ctx.beginPath(); ctx.moveTo(0, yTopPx); ctx.lineTo(canvas.width, yTopPx); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#f78166";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillText("上题结束", 4, yTopPx - 4);
+    ctx.setLineDash([8, 4]);
+  }
+  // Blue line = B 开始位置
+  if (yBotPx >= 0) {
+    ctx.strokeStyle = "#58a6ff";
+    ctx.beginPath(); ctx.moveTo(0, yBotPx); ctx.lineTo(canvas.width, yBotPx); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#58a6ff";
+    ctx.font = "bold 12px sans-serif";
+    ctx.fillText("下题开始", 4, yBotPx + 14);
+    ctx.setLineDash([8, 4]);
+  }
+
+  // Overlay
+  if (yTopPx >= 0 && yBotPx >= 0) {
+    ctx.setLineDash([]);
+    if (yBotPx > yTopPx) {
+      // Normal: discard strip between red and blue
+      ctx.fillStyle = "rgba(100,100,100,0.45)";
+      ctx.fillRect(0, yTopPx, canvas.width, yBotPx - yTopPx);
+    } else {
+      // Overlap: blue above red — bottom question "recovers" content above red line
+      ctx.fillStyle = "rgba(88,166,255,0.15)";
+      ctx.fillRect(0, yBotPx, canvas.width, yTopPx - yBotPx);
+    }
+  }
+}
+
+document.getElementById("splitCanvas").addEventListener("click", e => {
+  const canvas = e.currentTarget;
+  const rect   = canvas.getBoundingClientRect();
+  const ratio  = (e.clientY - rect.top) / rect.height;
+
+  if (splitState.step === 0) {
+    splitState.yTop = ratio;
+    splitState.step = 1;
+    document.getElementById("splitHint").textContent =
+      "第②步：点击下题开始位置（蓝线）。可在红线上方或下方。再次点击可重置红线。";
+  } else if (splitState.step === 1) {
+    // Any click in step 1: set blue line
+    splitState.yBot = ratio;
+    splitState.step = 2;
+    const overlap = ratio < splitState.yTop;
+    document.getElementById("splitHint").textContent = overlap
+      ? "✅ 蓝线在红线上方（下题回收重叠内容）。点击可重置红线位置。"
+      : "✅ 两条线已设置，灰色区域将被丢弃。点击可重置红线位置。";
+    document.getElementById("splitConfirmBtn").disabled = false;
+  } else if (splitState.step === 2) {
+    // Re-click resets red line
+    splitState.yTop = ratio;
+    splitState.yBot = -1;
+    splitState.step = 1;
+    document.getElementById("splitConfirmBtn").disabled = true;
+    document.getElementById("splitHint").textContent =
+      "红线已重置。第②步：点击下题开始位置（蓝线）。";
+  }
+  drawSplitCanvas();
+});
+
+function closeSplitModal() {
+  document.getElementById("splitModal").classList.remove("open");
+  splitState.fromModal = false;
+}
+
+async function confirmSplit() {
+  const newNum = parseInt(document.getElementById("splitNewNum").value);
+  if (!newNum || newNum <= 0) { showToast("请输入有效的题号", "error"); return; }
+  if (splitState.step < 2)    { showToast("请先完成两条线的设置", "error"); return; }
+
+  const resp = await fetch(`/split/${state.jobId}/${splitState.index}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      y_ratio_top: splitState.yTop,
+      y_ratio_bot: splitState.yBot,
+      new_number:  newNum,
+    }),
+  });
+  const data = await resp.json();
+  if (!data.ok) { showToast("分割失败：" + (data.error || ""), "error"); return; }
+
+  closeSplitModal();
+  const previewResp = await fetch(`/preview/${state.jobId}`);
+  const preview = await previewResp.json();
+  const gridId = _getActiveGrid();
+  renderThumbnails(preview.images || [], preview.meta || [], gridId);
+  showToast("分割成功！");
+  // If triggered from modal, reopen modal at the split position
+  if (splitState.fromModal) {
+    splitState.fromModal = false;
+    modalState.total = (preview.images || []).length;
+    const targetIdx = Math.min(splitState.index, modalState.total - 1);
+    const grid = document.getElementById(gridId);
+    const cards = grid.querySelectorAll(".thumb-card");
+    if (cards[targetIdx]) cards[targetIdx].querySelector("img").click();
+  }
+}
+
+async function mergeNext(index) {
+  const resp = await fetch(`/merge_next/${state.jobId}/${index}`, { method: "POST" });
+  const data = await resp.json();
+  if (!data.ok) { showToast("合并失败：" + (data.error || ""), "error"); return; }
+  const previewResp = await fetch(`/preview/${state.jobId}`);
+  const preview = await previewResp.json();
+  renderThumbnails(preview.images || [], preview.meta || [], _getActiveGrid());
+  showToast("已合并，请使用✂️分割工具重新切分");
+}
+
+async function deleteQuestion(index) {
+  if (!await showConfirm("确认删除这道题？")) return;
+  const resp = await fetch(`/delete_question/${state.jobId}/${index}`, { method: "POST" });
+  const data = await resp.json();
+  if (!data.ok) { showToast("删除失败：" + (data.error || ""), "error"); return; }
+  const previewResp = await fetch(`/preview/${state.jobId}`);
+  const preview = await previewResp.json();
+  renderThumbnails(preview.images || [], preview.meta || [], _getActiveGrid());
+}
+
+function toggleQ(header) {
+  header.parentElement.classList.toggle("open");
+}
+
+/* UI helpers */
+function showProgress(on) {
+  document.getElementById("progressWrap").classList.toggle("visible", on);
+}
+function setProgress(pct, msg) {
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressMsg").textContent  = msg;
+  document.getElementById("progressPct").textContent  = pct + "%";
+}
+function showResults() {
+  document.getElementById("resultsSection").classList.add("visible");
+  document.getElementById("resultsSection").scrollIntoView({ behavior: "smooth" });
+}
+function hideResults() {
+  document.getElementById("resultsSection").classList.remove("visible");
+}
+const modalState = { index: -1, total: 0 };
+
+function openModal(src, index) {
+  document.getElementById("modalImg").src = src;
+  document.getElementById("modal").classList.add("open");
+  if (index !== undefined) {
+    modalState.index = index;
+    _updateModalNav();
+    // Load full-res
+    _loadModalFull(index);
+  }
+}
+
+function _updateModalNav() {
+  const { index, total } = modalState;
+  document.getElementById("modalPrev").disabled = index <= 0;
+  document.getElementById("modalNext").disabled = index >= total - 1;
+  document.getElementById("modalLabel").textContent =
+    total > 0 ? `${index + 1} / ${total}` : "";
+}
+
+async function _loadModalFull(index) {
+  try {
+    const r = await fetch(`/full_image/${state.jobId}/${index}`);
+    const d = await r.json();
+    if (d.image && modalState.index === index)
+      document.getElementById("modalImg").src = `data:image/png;base64,${d.image}`;
+  } catch(e) {}
+}
+
+async function modalNav(dir) {
+  const next = modalState.index + dir;
+  if (next < 0 || next >= modalState.total) return;
+  modalState.index = next;
+  // Get thumbnail from grid immediately
+  const grid = document.getElementById(
+    document.getElementById("previewGrid").children.length > 0 ? "previewGrid" : "resultPreviewGrid"
+  );
+  const cards = grid.querySelectorAll(".thumb-card");
+  if (cards[next]) {
+    const thumb = cards[next].querySelector("img").src;
+    document.getElementById("modalImg").src = thumb;
+  }
+  _updateModalNav();
+  _loadModalFull(next);
+}
+
+function closeModal() {
+  document.getElementById("modal").classList.remove("open");
+}
+document.getElementById("modal").addEventListener("click", e => {
+  if (e.target === document.getElementById("modal")) closeModal();
+});
+// Keyboard navigation
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("modal").classList.contains("open")) return;
+  if (e.key === "ArrowLeft")  modalNav(-1);
+  if (e.key === "ArrowRight") modalNav(1);
+  if (e.key === "Escape")     closeModal();
+});
+// Scroll navigation
+document.getElementById("modal").addEventListener("wheel", e => {
+  e.preventDefault();
+  modalNav(e.deltaY > 0 ? 1 : -1);
+}, { passive: false });
+
+// Modal action buttons operate on modalState.index
+function _getActiveGrid() {
+  const pg = document.getElementById("previewGrid");
+  return (pg && pg.children.length > 0) ? "previewGrid" : "resultPreviewGrid";
+}
+async function _refreshActiveGrid() {
+  const previewResp = await fetch(`/preview/${state.jobId}`);
+  const preview = await previewResp.json();
+  const gridId = _getActiveGrid();
+  renderThumbnails(preview.images || [], preview.meta || [], gridId);
+  modalState.total = (preview.images || []).length;
+  _updateModalNav();
+}
+
+function modalDoSplit() {
+  const idx = modalState.index;
+  if (idx < 0) return;
+  const grid = document.getElementById(_getActiveGrid());
+  const cards = grid.querySelectorAll(".thumb-card");
+  const num = cards[idx] ? parseInt(cards[idx].querySelector(".thumb-label").textContent.match(/\d+/)?.[0] || "1") : idx + 1;
+  closeModal();
+  splitState.fromModal = true;
+  openSplitModal(idx, num);
+}
+async function modalDoMerge() {
+  const idx = modalState.index;
+  if (idx < 0) return;
+  const resp = await fetch(`/merge_next/${state.jobId}/${idx}`, { method: "POST" });
+  const data = await resp.json();
+  if (!data.ok) { showToast("合并失败：" + (data.error || ""), "error"); return; }
+  // Refresh thumbnails in background
+  const previewResp = await fetch(`/preview/${state.jobId}`);
+  const preview = await previewResp.json();
+  const gridId = _getActiveGrid();
+  renderThumbnails(preview.images || [], preview.meta || [], gridId);
+  modalState.total = (preview.images || []).length;
+  const newIdx = Math.min(idx, modalState.total - 1);
+  modalState.index = newIdx;
+  _updateModalNav();
+  // Reload the merged image in modal without closing
+  const imgResp = await fetch(`/full_image/${state.jobId}/${newIdx}`);
+  const imgData = await imgResp.json();
+  document.getElementById("modalImg").src = "data:image/png;base64," + imgData.image;
+  document.getElementById("modalLabel").textContent = `${newIdx + 1} / ${modalState.total}`;
+  showToast("已合并，请使用✂️分割工具重新切分");
+}
+async function modalDoDelete() {
+  const idx = modalState.index;
+  closeModal();
+  await deleteQuestion(idx);
+  await _refreshActiveGrid();
+}
+
+let toastTimer = null;
+function showToast(msg, type = "ok") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.toggle("error", type === "error");
+  t.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 4500);
+}
+
+let _confirmResolve = null;
+function showConfirm(msg) {
+  document.getElementById("confirmMsg").textContent = msg;
+  document.getElementById("confirmDlg").classList.add("open");
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+function _confirmClick(yes) {
+  document.getElementById("confirmDlg").classList.remove("open");
+  if (_confirmResolve) { _confirmResolve(yes); _confirmResolve = null; }
+}
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
+  return (bytes/1024/1024).toFixed(1) + " MB";
+}
+function esc(str) {
+  return String(str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+</script>
+</body>
+</html>

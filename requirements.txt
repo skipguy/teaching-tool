@@ -1,0 +1,8 @@
+flask
+PyMuPDF
+python-pptx
+Pillow
+openai
+httpx[socks]
+rapidocr-onnxruntime
+onnxruntime==1.18.1
