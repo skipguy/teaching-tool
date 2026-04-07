@@ -1,67 +1,63 @@
-# 高中物理备课工具
+# 📚 高中物理备课工具
 
-上传作业/试卷 PDF，自动切题、AI 分析知识点、生成讲评 PPT 和板书笔记。
+> 把作业PDF丢进去，AI帮你备课。
 
-## 功能
+作为物理老师，你有没有盯着一摞作业发呆，想着明天要讲评却不知道从哪里下手？
 
-- **自动切题**：识别 PDF 中的题目边界，逐题裁切为图片
-- **人工校对**：可手动分割、合并、删除识别错误的题目
-- **AI 分析**（DeepSeek V3）：
-  - 逐题给出知识点和解题思路
-  - 按核心考点归类分组
-  - 生成可直接上课用的板书（Markdown 格式，支持 KaTeX 数学公式）
-- **一键导出**：讲评 PPT、板书 Markdown、分析 JSON
+这个工具做的事很简单：**上传作业PDF → 自动切题 → AI分析 → 一键导出讲评PPT和板书**。
+
+---
+
+## 它能干什么
+
+**第一步（秒完成）**：把PDF里的题目一道道切出来，摆给你看
+
+**第二步（你来把关）**：切错了？手动分割、合并、删掉都行
+
+**第三步（交给AI）**：DeepSeek帮你：
+- 分析每道题考了什么知识点、怎么解
+- 把相同考点的题归为一组（专题讲评模式）
+- 写一份可以直接上课用的板书（带公式、带表格、带重点标注）
+
+**第四步（拿走就用）**：下载讲评PPT、板书Markdown、分析JSON
+
+---
 
 ## 快速开始
 
-**1. 安装依赖**
-
 ```bash
+# 安装依赖
 pip install -r requirements.txt
-```
 
-**2. 启动服务**
-
-```bash
+# 启动
 python app.py
 ```
 
-或双击 `run.bat`
+或者直接双击 `run.bat`，然后打开 http://localhost:5000
 
-**3. 打开浏览器**
+> 需要自备 [DeepSeek API Key](https://platform.deepseek.com/)，按量计费，分析一份作业大约几毛钱。
 
-访问 [http://localhost:5000](http://localhost:5000)
-
-**4. 使用流程**
-
-1. 填入 DeepSeek API Key（[在此获取](https://platform.deepseek.com/)）
-2. 上传作业/试卷 PDF（可选：附上课件 PDF 作为参考）
-3. 等待自动切题，检查题目图片，按需调整
-4. 点击「开始 AI 分析」
-5. 下载 PPT 和板书
+---
 
 ## 技术栈
 
-| 组件 | 说明 |
-|------|------|
-| Flask | Web 后端 |
-| RapidOCR + ONNX Runtime | 题目图片文字识别 |
-| PyMuPDF | PDF 解析与渲染 |
-| DeepSeek V3 API | 知识点分析与板书生成 |
-| python-pptx | PPT 生成 |
-| Pillow | 图像处理 |
+- **Flask** — 后端
+- **RapidOCR** — 识别题目图片里的文字
+- **PyMuPDF** — 解析PDF
+- **DeepSeek V3** — 知识点分析 + 板书生成
+- **python-pptx** — 生成PPT
+- **Pillow** — 图像处理
 
-## 系统要求
+---
 
-- Python 3.10+
-- Windows / macOS / Linux
+## 注意
 
-## 注意事项
+- API Key 只在本地用，不会存到任何地方
+- 上传的PDF存在本地 `uploads/` 目录，服务重启后历史任务清空
+- 扫描件（图片PDF）也支持，OCR之后照常分析
 
-- 需要自备 DeepSeek API Key，API Key 仅在本地使用，不会上传或存储
-- 上传的 PDF 文件保存在本地 `uploads/` 目录，重启服务后历史任务会清空
-- 扫描件 PDF（无文字图层）也支持，OCR 识别后送入 AI 分析
+---
 
 ## License
 
-MIT
+MIT — 随便用，改了也不用告诉我。
