@@ -37,7 +37,7 @@ python app.py
 
 或者直接双击 `run.bat`，然后打开 http://localhost:5000
 
-> 需要自备 [DeepSeek API Key](https://platform.deepseek.com/)，按量计费，分析一份作业大约几毛钱。
+> 需要自备 [DeepSeek API Key](https://platform.deepseek.com/)，按量计费，分析一份作业大约几分钱。
 
 ---
 
